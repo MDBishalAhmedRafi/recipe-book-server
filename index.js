@@ -82,9 +82,9 @@ async function run() {
                   const id = req.params.id;
                   const filter = {_id: new ObjectId(id)};
                   const options = {upsert: true};
-                  const updatedRecipe = req.body;
+                  const updatedRecipes = req.body;
                   const updatedDoc = { 
-                    $set: updatedRecipe
+                    $set: updatedRecipes
                   }
                   const result = await recipesCollection.updateOne(filter, updatedDoc, options);
                   res.send(result);
