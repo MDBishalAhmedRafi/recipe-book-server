@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -47,10 +47,35 @@ async function run() {
                  app.get('/recipies', async(req, res) => { 
                                 // const cursor = recipiesCollection.find().sort({likeCount:1}).limit(6);
                                 // const result = await cursor.toArray()
-
                                 const result = await recipesCollection.find().sort({likeCount:1}).limit(6).toArray();
                                 res.send(result);
                                 console.log(result);
+                })
+
+
+                 app.get('/my-recipies/:email', async(req, res) => { 
+                  const email = req.params.email;
+                  const query = {email}
+                  const result = await recipesCollection.find(query).toArray();
+                  res.send(result);
+  })
+
+
+                 app.get('/more-recipies', async(req, res) => { 
+                                // const cursor = recipiesCollection.find().sort({likeCount:1}).limit(6);
+                                // const result = await cursor.toArray()
+                                const result = await recipesCollection.find().toArray();
+                                res.send(result);
+                                console.log(result);
+                })
+
+               
+
+                app.get('/more-recipies/:id', async(req, res) => { 
+                  const id = req.params.id;
+                  const query = { _id: new ObjectId(id)}
+                  const result = await recipesCollection.findOne(query);
+                  res.send(result);
                 })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
