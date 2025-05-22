@@ -78,6 +78,18 @@ async function run() {
                   res.send(result);
                 })
 
+                app.put('/my-recipies/:id', async (req, res) => { 
+                  const id = req.params.id;
+                  const filter = {_id: new ObjectId(id)};
+                  const options = {upsert: true};
+                  const updatedRecipe = req.body;
+                  const updatedDoc = { 
+                    $set: updatedRecipe
+                  }
+                  const result = await recipesCollection.updateOne(filter, updatedDoc, options);
+                  res.send(result);
+                })
+
 
                 app.delete('/my-recipies/:id', async (req, res) => { 
                    const id = req.params.id;
