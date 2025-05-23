@@ -90,6 +90,20 @@ async function run() {
                   res.send(result);
                 })
 
+//                 //like count for a recipe
+
+
+//                 app.patch('/recipies/:id', async (req, res) => {
+//   const id = req.params.id;
+//   try {
+//     const result = await recipesCollection.updateOne(
+//       { _id: new ObjectId(id) },
+//       { $inc: { likeCount: 1 } }
+//     );
+//     res.send(result);
+//   } 
+// });
+
 
                 app.delete('/my-recipies/:id', async (req, res) => { 
                    const id = req.params.id;
