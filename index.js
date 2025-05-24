@@ -47,7 +47,7 @@ async function run() {
                  app.get('/recipies', async(req, res) => { 
                                 // const cursor = recipiesCollection.find().sort({likeCount:1}).limit(6);
                                 // const result = await cursor.toArray()
-                                const result = await recipesCollection.find().sort({likeCount:1}).limit(6).toArray();
+                                const result = await recipesCollection.find().sort({likeCount:-1}).limit(6).toArray();
                                 res.send(result);
                                 console.log(result);
                 })
@@ -93,16 +93,14 @@ async function run() {
 //                 //like count for a recipe
 
 
-//                 app.patch('/recipies/:id', async (req, res) => {
-//   const id = req.params.id;
-//   try {
-//     const result = await recipesCollection.updateOne(
-//       { _id: new ObjectId(id) },
-//       { $inc: { likeCount: 1 } }
-//     );
-//     res.send(result);
-//   } 
-// });
+                app.patch('/recipies/:id', async (req, res) => {
+  const id = req.params.id;
+    const result = await recipesCollection.updateOne(
+      { _id: new ObjectId(id) },
+      { $inc: { likeCount: 1 } }
+    );
+    res.send(result);
+});
 
 
                 app.delete('/my-recipies/:id', async (req, res) => { 
