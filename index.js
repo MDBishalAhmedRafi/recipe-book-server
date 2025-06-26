@@ -1,131 +1,132 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-
+// Middleware
 app.use(cors());
 app.use(express.json());
 
-//pass: 8KWaHYJ7cUP1cL0G
-//user: recipe-book
-
-
-
-
+// MongoDB connection URI
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ucyzrcm.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+// MongoDB Client
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
-  }
+  },
 });
 
 async function run() {
   try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    const recipesCollection = client.db('recipeDB').collection('recipies');
+    const usersCollection = client.db('recipeDB').collection('users'); // optional for future use
 
-                // const recipiesCollection = client.db('coffeeDB').collection('Top-recipe')
-                const recipesCollection = client.db('recipeDB').collection('recipies')
+    // POST a new recipe
+    app.post('/recipies', async (req, res) => {
+      const newRecipe = req.body;
+      const result = await recipesCollection.insertOne(newRecipe);
+      res.send(result);
+    });
 
+    // GET top 6 recipes sorted by likeCount
+    app.get('/recipies', async (req, res) => {
+      const result = await recipesCollection.find().sort({ likeCount: -1 }).limit(6).toArray();
+      res.send(result);
+    });
 
-                app.post('/recipies', async(req, res) => { 
-                                const newRecipe = req.body;
-                                console.log(newRecipe);
-                                const result = await recipesCollection.insertOne(newRecipe);
-                                res.send(result);
+    // GET recipes added by a specific user
+    app.get('/my-recipies/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await recipesCollection.find(query).toArray();
+      res.send(result);
+    });
 
-                })
+    // GET all recipes
+    app.get('/more-recipies', async (req, res) => {
+      const result = await recipesCollection.find().toArray();
+      res.send(result);
+    });
 
-                 app.get('/recipies', async(req, res) => { 
-                                // const cursor = recipiesCollection.find().sort({likeCount:1}).limit(6);
-                                // const result = await cursor.toArray()
-                                const result = await recipesCollection.find().sort({likeCount:-1}).limit(6).toArray();
-                                res.send(result);
-                                console.log(result);
-                })
+    // GET single recipe by ID
+    app.get('/more-recipies/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await recipesCollection.findOne(query);
+      res.send(result);
+    });
 
+    // UPDATE a recipe
+    app.put('/my-recipies/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = { $set: req.body };
+      const result = await recipesCollection.updateOne(filter, updatedDoc, options);
+      res.send(result);
+    });
 
-                 app.get('/my-recipies/:email', async(req, res) => { 
-                  const email = req.params.email;
-                  const query = {email}
-                  const result = await recipesCollection.find(query).toArray();
-                  res.send(result);
-  })
+    // INCREMENT like count of a recipe
+    app.patch('/recipies/:id', async (req, res) => {
+      const id = req.params.id;
+      const result = await recipesCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $inc: { likeCount: 1 } }
+      );
+      res.send(result);
+    });
 
+    // DELETE a recipe
+    app.delete('/my-recipies/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await recipesCollection.deleteOne(query);
+      res.send(result);
+    });
 
-                 app.get('/more-recipies', async(req, res) => { 
-                                // const cursor = recipiesCollection.find().sort({likeCount:1}).limit(6);
-                                // const result = await cursor.toArray()
-                                const result = await recipesCollection.find().toArray();
-                                res.send(result);
-                                console.log(result);
-                })
+    // ✅ NEW: GET STATS for total foods, user's recipes, and total users
+    app.get('/stats', async (req, res) => {
+      try {
+        const totalRecipes = await recipesCollection.estimatedDocumentCount();
+        const userEmail = req.query.email;
 
-               
+        let userRecipesCount = 0;
+        if (userEmail) {
+          userRecipesCount = await recipesCollection.countDocuments({ email: userEmail });
+        }
 
-                app.get('/more-recipies/:id', async(req, res) => { 
-                  const id = req.params.id;
-                  const query = { _id: new ObjectId(id)}
-                  const result = await recipesCollection.findOne(query);
-                  res.send(result);
-                })
+        const totalUsers = await usersCollection.estimatedDocumentCount(); // optional
 
-                app.put('/my-recipies/:id', async (req, res) => { 
-                  const id = req.params.id;
-                  const filter = {_id: new ObjectId(id)};
-                  const options = {upsert: true};
-                  const updatedRecipes = req.body;
-                  const updatedDoc = { 
-                    $set: updatedRecipes
-                  }
-                  const result = await recipesCollection.updateOne(filter, updatedDoc, options);
-                  res.send(result);
-                })
+        res.send({
+          totalRecipes,
+          userRecipesCount,
+          totalUsers,
+        });
+      } catch (error) {
+        res.status(500).send({ message: 'Failed to fetch stats', error });
+      }
+    });
 
-//                 //like count for a recipe
-
-
-                app.patch('/recipies/:id', async (req, res) => {
-  const id = req.params.id;
-    const result = await recipesCollection.updateOne(
-      { _id: new ObjectId(id) },
-      { $inc: { likeCount: 1 } }
-    );
-    res.send(result);
-});
-
-
-                app.delete('/my-recipies/:id', async (req, res) => { 
-                   const id = req.params.id;
-                   const query = {_id: new ObjectId(id)}
-                   const result = await recipesCollection.deleteOne(query);
-                   res.send(result); 
-                })
-
-
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    console.log("Connected to MongoDB!");
   } finally {
-    // Ensures that the client will close when you finish/error
-//     await client.close();
+    // Keep connection open (do not close)
   }
 }
+
 run().catch(console.dir);
 
+// Root endpoint
+app.get('/', (req, res) => {
+  res.send('Recipes API is running');
+});
 
-app.get('/', (req, res) => { 
-                res.send('Recipies are getting Ready')
-})
-
-app.listen(port, () => { 
-                console.log(`Recipe Server is running on Port ${port}`);
-})
+// Start server
+app.listen(port, () => {
+  console.log(`Recipe Server is running on Port ${port}`);
+});
