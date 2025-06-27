@@ -6,6 +6,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 3000;
 
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -25,7 +26,17 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const recipesCollection = client.db('recipeDB').collection('recipies');
-    const usersCollection = client.db('recipeDB').collection('users'); // optional for future use
+    const usersCollection = client.db('recipeDB').collection('users');
+
+    app.post('/users', async (req, res) => {
+      const user = req.body;
+      const filter = { email: user.email };
+      const updateDoc = { $set: user };
+      const options = { upsert: true };
+
+      const result = await usersCollection.updateOne(filter, updateDoc, options);
+      res.send(result);
+    });
 
     // POST a new recipe
     app.post('/recipies', async (req, res) => {
@@ -90,6 +101,7 @@ async function run() {
       res.send(result);
     });
 
+
     // ✅ NEW: GET STATS for total foods, user's recipes, and total users
     app.get('/stats', async (req, res) => {
       try {
@@ -113,11 +125,12 @@ async function run() {
       }
     });
 
-    console.log("Connected to MongoDB!");
+    console.log("Pinged your deployment. You successfully Connected to MongoDB!");
   } finally {
     // Keep connection open (do not close)
   }
 }
+
 
 run().catch(console.dir);
 
